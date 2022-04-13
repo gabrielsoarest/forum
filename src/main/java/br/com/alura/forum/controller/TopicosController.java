@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/topicos")
@@ -40,6 +41,7 @@ public class TopicosController {
 
     }
     @PostMapping()
+    @Transactional
     public ResponseEntity<TopicoDTO> cadastrar(@RequestBody @Valid TopicoForm form, UriComponentsBuilder uriBuilder){
 
         Topico topico = form.converter(cursoRepository);
@@ -50,17 +52,35 @@ public class TopicosController {
     }
 
     @GetMapping("/{id}")
-    public DetalhesTopicoDTO detalhar(@PathVariable Long id){
-        Topico topico = this.topicoRepository.getById(id);
-        return new DetalhesTopicoDTO(topico);
+    public ResponseEntity <DetalhesTopicoDTO> detalhar(@PathVariable Long id){
+        Optional<Topico> optional = this.topicoRepository.findById(id);
+
+        if(optional.isPresent()){
+              return  ResponseEntity.ok(new DetalhesTopicoDTO(optional.get()));
+        }
+
+        return ResponseEntity.notFound().build();
 
     }
 
     @PutMapping("/{id}")
     @Transactional
     public ResponseEntity<TopicoDTO> atualizar(@PathVariable Long id, @RequestBody @Valid AtualizacaoTopicoForm form){
-        Topico topico = form.atualizar(id, this.topicoRepository);
-        return ResponseEntity.ok(new TopicoDTO(topico));
+        Optional<Topico> optional = this.topicoRepository.findById(id);
+        if(optional.isPresent()){
+            topicoRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
-
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> remover(@PathVariable Long id){
+        Optional<Topico> optional = this.topicoRepository.findById(id);
+        if(optional.isPresent()){
+            topicoRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
 }
